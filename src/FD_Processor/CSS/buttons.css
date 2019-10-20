@@ -1,0 +1,7 @@
+.side_button {
+    -fx-background-color: #4d4b4b;
+}
+
+#side_button_selected {
+    -fx-border-color: white;
+}
