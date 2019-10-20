@@ -38,5 +38,4 @@ public class MainController {
     void load_html_file(ActionEvent event) {
 
     }
-
 }
