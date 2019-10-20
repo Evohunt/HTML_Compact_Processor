@@ -2,7 +2,7 @@
 
 HTML document scanner and analyzer build using Java 8 and Javafx.
 
-### Part.1 Lexer
+### Part I - Lexer
 
 Main goal:
 
