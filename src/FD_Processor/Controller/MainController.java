@@ -75,6 +75,8 @@ public class MainController {
         if (file != null) {
             loaded_filename_label.setText(file.getName());
         } else {
+            analyzer_log_textfield.setText("");
+            loaded_filename_label.setText("");
             System.out.println("No file has been opened!");
         }
     }
