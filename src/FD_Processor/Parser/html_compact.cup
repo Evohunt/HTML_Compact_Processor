@@ -1,0 +1,946 @@
+import java_cup.runtime.*;
+import java.util.*; 
+
+parser code {:
+    
+    public void report_error(String message, Object info) {
+   
+     
+        StringBuffer m = new StringBuffer("Error");
+   
+        
+        if (info instanceof java_cup.runtime.Symbol) {
+            
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+   
+            
+            if (s.left >= 0) {                
+                
+                m.append(" in line "+(s.left+1));   
+               
+                if (s.right >= 0)                    
+                    
+                    m.append(", column "+(s.right+1));
+            }
+        }
+
+        m.append(" : "+message);
+
+        System.err.println(m);
+    }
+   
+    
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+        System.exit(1);
+    }
+:}; 
+
+
+terminal String      HTML,EHTML, BUTTON, EBUTTON, DIR, EDIR, DIV, EDIV, LABEL, ELABEL, MAP, EMAP, MENU, EMENU, OBJECT, EOBJECT, PARAM, EPRE, ESCRIPT, SPAN, ESPAN, ETITLE, EVAR, BODY,EBODY,FRAMESET,EFRAMESET,TEXT,FRAME,NOFRAMES,ENOFRAMES,FORM,EFORM,INPUT,SELECT,ESELECT,OPTION,EOPTION,TABLE,ETABLE,TR,ETR,TH,ETH,TD,ETD,THEAD,TBODY,IMG,A,EA,UL,EUL,OL,EOL,LI,ELI,B,EB,I,EI,U,EU,SMALL,ESMALL,SUB,ESUB,SUP,ESUP,FONT,EFONT,CENTER,ECENTER,H1,EH1,H2,EH2,H3,EH3,H4,EH4,H5,EH5,H6,EH6,P,EP,HR,BR;
+
+non terminal Node html_tag;
+non terminal Vector html_content,body_tag,frameset_tag, button_tag, button_contents, button_content, dir_tag, dir_contents, dir_content, div_tag, div_contents, div_content, label_tag, label_contents, label_content, map_tag, map_contents, map_content, menu_tag, menu_contents, menu_content, object_tag, object_contents, object_content, param_tag, param_contents, frameset_contents, frameset_content, body_contents,body_content, block, heading, text, form_contents, form_content, option, options, ol_tag, li_tag,li_tags,  p_tag, table_tag, ul_tag, flows, flow, a_tag, physical_style,a_contents, a_content,form_tag,center_tag,table_cell,table_cells,tr_tag, table_contents, table_content,form_body_content,form_block, form_center_tag;
+
+html_tag     ::=HTML:h html_content:c EHTML:e
+                 {:
+                   Node nh = new Node(h,c);
+                   Node ne = new Node(e,null);
+                   Vector v = new Vector();
+                   v.addElement(nh);
+                   v.addElement(ne);
+
+                   RESULT = new Node("document", v);
+                   RESULT.resultPrinter(RESULT,0);
+                  
+                 :};
+
+html_content  ::=body_tag:b
+                   {:
+                     RESULT = b;
+                     
+                   :}
+                 |
+                 frameset_tag:f
+                   {:
+                     RESULT = f;
+                   :}
+                 ;
+body_tag      ::=BODY:f EBODY:e
+                  {:
+                     Node nt = new Node(f, null);
+                     Node ne = new Node(e, null);
+                     Vector v1 = new Vector();
+                     v1.addElement(nt);
+                     v1.addElement(ne);
+                     RESULT = v1;
+      
+                  :}
+                 |
+                  BODY:f body_contents:bc EBODY:e
+                     {:
+                        Node nf = new Node(f, bc);
+                        Node ne = new Node(e, null);
+                        Vector v1 = new Vector();
+                        v1.addElement(nf);
+                        v1.addElement(ne);
+                        RESULT = v1;
+                     :}
+                 
+                 ;
+
+frameset_tag    ::=FRAMESET:f frameset_contents:fs EFRAMESET:e
+                     {:
+                        Node nf = new Node(f, fs);
+                        Node ne = new Node(e, null);
+                        Vector v1 = new Vector();
+                        v1.addElement(nf);
+                        v1.addElement(ne);
+                        RESULT = v1;
+                     :}
+                   |
+                    FRAMESET:f EFRAMESET:e
+                     {:
+                        Node nf = new Node(f, null);
+                        Node ne = new Node(e, null);
+                        Vector v1 = new Vector();
+                        v1.addElement(nf);
+                        v1.addElement(ne);
+                        RESULT = v1;
+                     :} 
+                     ;
+
+frameset_contents  ::= frameset_contents:fs frameset_content:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                      |
+                      frameset_content:f
+                        {:
+                           RESULT = f;   
+                        :}
+                      ; 
+
+frameset_content    ::=FRAME:f
+                        {:
+                         Node nf = new Node(f, null);
+                         Vector v1 = new Vector();
+                         v1.addElement(nf);
+                         RESULT = v1;
+                       :}
+                      |
+                      NOFRAMES:f ENOFRAMES:e
+                         {:
+                           Node nf = new Node(f, null);
+                           Node ne = new Node(e, null);
+                           Vector v1 = new Vector();
+                           v1.addElement(nf);
+                           v1.addElement(ne);
+                           RESULT = v1;
+                        :}
+                      |
+                      NOFRAMES:f body_contents:bc ENOFRAMES:e
+                         {:
+                            Node nf = new Node(f, bc);
+                            Node ne = new Node(e, null);
+                            Vector v1 = new Vector();
+                            v1.addElement(nf);
+                            v1.addElement(ne);
+                            RESULT = v1;
+                         :} 
+                     ; 
+
+
+body_contents    ::=body_contents:fs body_content:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                      |
+                      body_content:f
+                        {:
+                           RESULT = f;   
+                        :}
+                      ; 
+
+body_content    ::=block:b
+                       {:
+                         RESULT = b;
+                       :}
+                    |
+                    heading:h
+                        {:
+                         RESULT = h;
+                       :}
+                    |
+                    text:t
+                        {:
+                         RESULT = t;
+                       :}
+                    |
+                    HR:f
+                        {:
+                         Node nf = new Node(f, null);
+                         Vector v1 = new Vector();
+                         v1.addElement(nf);
+                         RESULT = v1;
+                       :}
+                    ;
+
+form_body_content  ::=form_block:b
+                       {:
+                         RESULT = b;
+                       :}
+                    |
+                    heading:h
+                        {:
+                         RESULT = h;
+                       :}
+                    |
+                    text:t
+                        {:
+                         RESULT = t;
+                       :}
+                    |
+                    HR:f
+                        {:
+                         Node nf = new Node(f, null);
+                         Vector v1 = new Vector();
+                         v1.addElement(nf);
+                         RESULT = v1;
+                       :}
+                    ;
+
+
+
+block           ::=center_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    form_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    ol_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    p_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    table_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    ul_tag:o
+                         {:
+                            RESULT = o;
+                         :} 
+                    ;
+
+form_block        ::=form_center_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    ol_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    p_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    table_tag:o
+                         {:
+                            RESULT = o;
+                         :}
+                    |
+                    ul_tag:o
+                         {:
+                            RESULT = o;
+                         :} 
+                    ;
+
+center_tag       ::=CENTER:f body_content:bc ECENTER:e
+                          {:
+                            Node nf = new Node(f, bc);
+                            Node ne = new Node(e, null);
+                            Vector v1 = new Vector();
+                            v1.addElement(nf);
+                            v1.addElement(ne);
+                            RESULT = v1;
+                         :} 
+                      ;
+
+form_center_tag       ::=CENTER:f form_body_content:bc ECENTER:e
+                          {:
+                            Node nf = new Node(f, bc);
+                            Node ne = new Node(e, null);
+                            Vector v1 = new Vector();
+                            v1.addElement(nf);
+                            v1.addElement(ne);
+                            RESULT = v1;
+                         :} 
+                      ;
+
+form_tag         ::=FORM:f EFORM:e
+                          {:
+                            Node nf = new Node(f, null);
+                            Node ne = new Node(e, null);
+                            Vector v1 = new Vector();
+                            v1.addElement(nf);
+                            v1.addElement(ne);
+                            RESULT = v1;
+                         :}
+                    |
+                    FORM:f form_contents:fc EFORM:e
+                          {:
+                            Node nf = new Node(f, fc);
+                            Node ne = new Node(e, null);
+                            Vector v1 = new Vector();
+                            v1.addElement(nf);
+                            v1.addElement(ne);
+                            RESULT = v1;
+                         :} 
+                   ;
+
+form_contents    ::=form_contents:fs form_content:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                      |
+                      form_content:f
+                        {:
+                           RESULT = f;   
+                        :}
+                      ; 
+
+form_content      ::= INPUT:f
+                        {:
+                          Node nf = new Node(f, null);
+                          Vector v1 = new Vector();
+                          v1.addElement(nf);
+                          RESULT = v1;
+                         :}
+                       |
+                       form_body_content:bc
+                          {:
+                            RESULT = bc;
+                         :}
+                       |
+                       SELECT:f options:bc ESELECT:e
+                           {:
+                              Node nf = new Node(f, bc);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :} 
+                       ;
+
+options          ::=options:fs option:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                      |
+                      option:f
+                        {:
+                           RESULT = f;   
+                        :}
+                      ; 
+
+option            ::=OPTION:f TEXT:t EOPTION:e
+                         {:
+                              Node bc = new Node(t, null);
+                              Vector v = new Vector();
+                              v.addElement(bc);
+                              Node nf = new Node(f, v);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                      ;
+
+ol_tag             ::=OL:f li_tags:bc EOL:e
+                         {:
+                              Node nf = new Node(f, bc);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                        ;
+
+ul_tag             ::=UL:f li_tags:bc EUL:e
+                         {:
+                              Node nf = new Node(f, bc);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                        ;
+
+li_tags           ::=li_tags:fs li_tag:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                      |
+                      li_tag:f
+                        {:
+                           RESULT = f;   
+                        :}
+                      ; 
+
+li_tag             ::=LI:f flows:bc ELI:e               
+                          {:
+                              Node nf = new Node(f, bc);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                       |
+                      LI:f ELI:e               
+                          {:
+                              Node nf = new Node(f, null);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                       ;
+
+flows               ::=flows:fs flow:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                       |
+                        flow:f
+                          {:
+                             RESULT = f;   
+                          :}
+                       ; 
+flow                ::=block:b
+                           {:
+                             RESULT = b;   
+                           :}
+                        |
+                        text:t
+                           {:
+                             RESULT = t;   
+                          :}
+                        ;
+
+text                 ::=BR:f
+                           {:
+                              Node nf = new Node(f, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              RESULT = v1;
+                           :}
+                        |
+                        IMG:f
+                            {:
+                              Node nf = new Node(f, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              RESULT = v1;
+                           :}
+                        |
+                        a_tag:t 
+                            {:
+                             RESULT = t;   
+                            :}
+                        |
+                        TEXT:t
+                             {:
+                              Node nf = new Node(t, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              RESULT = v1;
+                            :} 
+                        |
+                        physical_style:t 
+                             {:
+                                RESULT = t;   
+                             :}
+                        ; 
+
+a_tag             ::=A:f a_contents:bc EA:e               
+                          {:
+                              Node nf = new Node(f, bc);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                       |
+                       A:f EA:e               
+                          {:
+                              Node nf = new Node(f, null);
+                              Node ne = new Node(e, null);
+                              Vector v1 = new Vector();
+                              v1.addElement(nf);
+                              v1.addElement(ne);
+                              RESULT = v1;
+                         :}
+                       ;
+
+a_contents          ::=a_contents:fs a_content:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                       |
+                        a_content:f
+                          {:
+                             RESULT = f;   
+                          :}
+                       ;
+a_content           ::=heading:h
+                           {:
+                             RESULT = h;   
+                           :}
+                        |
+                        text:t
+                           {:
+                             RESULT = t;   
+                          :}
+                        ;
+
+heading              ::=H1:f text:bc EH1:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}
+                         |
+                         H1:f EH1:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                         |
+                         H2:f text:bc EH2:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H2:f EH2:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H3:f text:bc EH3:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}
+                         |
+                         H3:f EH3:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}   
+                         |
+                         H4:f text:bc EH4:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H4:f EH4:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                         |
+                         H5:f text:bc EH5:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H5:f EH5:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H6:f text:bc EH6:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         H6:f EH6:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         ;
+
+physical_style     ::=B:f text:bc EB:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}
+                         |
+                         B:f EB:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                         |
+                         I:f text:bc EI:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         I:f  EI:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         U:f text:bc EU:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         U:f EU:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         SMALL:f text:bc ESMALL:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         SMALL:f ESMALL:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         SUP:f text:bc ESUP:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         SUP:f ESUP:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                         |
+                         SUB:f text:bc ESUB:e               
+                           {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         SUB:f ESUB:e               
+                           {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         FONT:f TEXT:t EFONT:e               
+                           {:  
+                               Node nt = new Node(t, null);
+                               Vector v = new Vector();
+                               v.addElement(nt); 
+                               Node nf = new Node(f, v);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         |
+                         FONT:f EFONT:e               
+                           {:  
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                         ;
+p_tag                ::= P:f TEXT:t EP:e               
+                           {:  
+                               Node nt = new Node(t, null);
+                               Vector v = new Vector();
+                               v.addElement(nt); 
+                               Node nf = new Node(f, v);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                          |
+                          P:f EP:e               
+                           {:  
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                          ;
+                       
+table_tag             ::=TABLE:f table_contents:bc ETABLE:e
+                            {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                          |
+                          TABLE:f ETABLE:e
+                            {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                          ;
+table_contents       ::=table_contents:fs table_content:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                       |
+                        table_content:f
+                          {:
+                             RESULT = f;   
+                          :}
+                       ; 
+
+table_content        ::=TBODY:t
+                            {:
+                               Node nt = new Node(t, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nt);
+                               RESULT = v1; 
+                            :} 
+                         |
+                         THEAD:t
+                            {:
+                               Node nt = new Node(t, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nt);
+                               RESULT = v1; 
+                            :}
+                          |
+                          tr_tag:t
+                             {:
+                                 RESULT = t;
+                             :}
+                           ;
+
+tr_tag             ::=TR:f table_cells:bc ETR:e
+                            {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :}  
+                          |
+                          TR:f ETR:e
+                            {:
+                               Node nf = new Node(f, null);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                          ; 
+
+table_cells       ::=table_cells:fs table_cell:f
+                         {: 
+                            Enumeration e = f.elements();
+		            while (e.hasMoreElements()) 
+	      	              fs.addElement((Node) e.nextElement()); 
+                            RESULT = fs;   
+                         :}
+                       |
+                        table_cell:f
+                          {:
+                             RESULT = f;   
+                          :}
+                       ;
+
+table_cell        ::=TD:f body_content:bc ETD:e
+                            {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                      |
+                      TH:f body_content:bc ETH:e
+                            {:
+                               Node nf = new Node(f, bc);
+                               Node ne = new Node(e, null);
+                               Vector v1 = new Vector();
+                               v1.addElement(nf);
+                               v1.addElement(ne);
+                               RESULT = v1;
+                           :} 
+                       ;
